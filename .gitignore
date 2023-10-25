@@ -1,0 +1,30 @@
+# ASP.NET and Rider IDE specific ignore
+.idea/
+.vscode/
+*.suo
+*.user
+*.sln.iml
+_ReSharper*
+*.resharper
+bin/
+obj/
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+
+# NuGet Packages
+*.nupkg
+#
+# Visual Studio files
+*.vscode
+.vscode/
+.vscode-test/
+.vs/
+# Rider files
+.idea
+*.sln.iml
+_ReSharper/
+_ReSharper.Caches/
+_ReSharper.Plugin/
