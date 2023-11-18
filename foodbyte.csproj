@@ -7,6 +7,9 @@
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="EonaCat.Web.RateLimiter" Version="1.0.2" />
+    <PackageReference Include="libc.web.ratelimit" Version="0.5.0" />
+    <PackageReference Include="Microsoft.AspNetCore.RateLimiting" Version="7.0.0-rc.2.22476.2" />
     <PackageReference Include="Npgsql" Version="6.0.7" />
     <PackageReference Include="SendGrid" Version="9.27.0" />
     <PackageReference Include="SendGrid.Extensions.DependencyInjection" Version="1.0.1" />
