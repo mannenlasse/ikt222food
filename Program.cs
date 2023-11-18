@@ -28,23 +28,18 @@ builder.Services.AddControllersWithViews();
 
 
 
+var myOptions = new MyRateLimitOptions();
+builder.Configuration.GetSection(MyRateLimitOptions.MyRateLimit).Bind(myOptions);
+var fixedPolicy = "fixed";
+
 builder.Services.AddRateLimiter(_ => _
-    .AddFixedWindowLimiter(policyName: "fixed", options =>
+    .AddFixedWindowLimiter(policyName: fixedPolicy, options =>
     {
-        options.PermitLimit = 4;
-        options.Window = TimeSpan.FromSeconds(12);
+        options.PermitLimit = myOptions.PermitLimit;
+        options.Window = TimeSpan.FromSeconds(myOptions.Window);
         options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        options.QueueLimit = 2;
-
-
-    })
-
- 
-    
-    
-);
-
-
+        options.QueueLimit = myOptions.QueueLimit;
+    }));
 
 
 
@@ -101,10 +96,11 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=index}/{id?}");
 app.MapRazorPages();
 
+
 static string GetTicks() => (DateTime.Now.Ticks & 0x11111).ToString("00000");
 
-
-
+app.MapGet("/Identity/Account/Login",  () => Console.WriteLine($"Fixed Window Limiter {GetTicks()}"))
+    .RequireRateLimiting(fixedPolicy);
 
 
 app.Run();
