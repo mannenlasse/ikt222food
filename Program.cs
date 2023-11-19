@@ -99,8 +99,11 @@ app.MapRazorPages();
 
 static string GetTicks() => (DateTime.Now.Ticks & 0x11111).ToString("00000");
 
-app.MapGet("/Identity/Account/Login",  () => Console.WriteLine($"Fixed Window Limiter {GetTicks()}"))
-    .RequireRateLimiting(fixedPolicy);
+//app.MapGet("/Identity/Account/Login",  () => Console.WriteLine($"Fixed Window Limiter {GetTicks()}"))
+//    .RequireRateLimiting(fixedPolicy);
+
+
+
 
 
 app.Run();
