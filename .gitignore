@@ -6,6 +6,7 @@
 *.sln.iml
 bin/
 obj/
+*.db
 
 # User-specific files
 *.userosscache
