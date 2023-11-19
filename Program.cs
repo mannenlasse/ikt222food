@@ -8,6 +8,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using AspNetCoreRateLimit;
+using NuGet.Protocol.Plugins;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,15 +33,29 @@ var myOptions = new MyRateLimitOptions();
 builder.Configuration.GetSection(MyRateLimitOptions.MyRateLimit).Bind(myOptions);
 var fixedPolicy = "fixed";
 
-builder.Services.AddRateLimiter(_ => _
-    .AddFixedWindowLimiter(policyName: fixedPolicy, options =>
-    {
-        options.PermitLimit = myOptions.PermitLimit;
-        options.Window = TimeSpan.FromSeconds(myOptions.Window);
-        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        options.QueueLimit = myOptions.QueueLimit;
-    }));
 
+int maxRejectionsBeforeTimeout = 2;
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    {
+        return RateLimitPartition.GetFixedWindowLimiter(partitionKey: httpContext.Request.Headers.Host.ToString(), partition =>
+            new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                AutoReplenishment = true,
+                QueueLimit = 5,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                Window = TimeSpan.FromSeconds(10)
+            });
+    });
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.StatusCode = 429;
+        await context.HttpContext.Response.WriteAsync("Too many requests. Please try later again... ", cancellationToken: token);
+    };
+});
 
 
 var app = builder.Build();
@@ -100,9 +115,7 @@ app.MapRazorPages();
 static string GetTicks() => (DateTime.Now.Ticks & 0x11111).ToString("00000");
 
 //app.MapGet("/Identity/Account/Login",  () => Console.WriteLine($"Fixed Window Limiter {GetTicks()}"))
-//    .RequireRateLimiting(fixedPolicy);
-
-
+ //  .RequireRateLimiting(fixedPolicy);
 
 
 
