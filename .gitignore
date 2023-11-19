@@ -15,7 +15,6 @@ obj/
 
 # Visual Studio files
 *.vscode
-.vscode/
 .vscode-test/
 .vs/
 # Rider files
