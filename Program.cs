@@ -27,7 +27,11 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.R
     .AddDefaultTokenProviders();
 builder.Services.AddControllersWithViews();
 
-
+builder.Services.AddAuthentication().AddGoogle(googleOptions =>
+{
+    googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+    googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+});
 
 var myOptions = new MyRateLimitOptions();
 builder.Configuration.GetSection(MyRateLimitOptions.MyRateLimit).Bind(myOptions);
