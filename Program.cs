@@ -35,26 +35,37 @@ var fixedPolicy = "fixed";
 
 
 int maxRejectionsBeforeTimeout = 2;
+int rejection = 0;
+
 
 builder.Services.AddRateLimiter(options =>
 {
-    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(hei =>
     {
-        return RateLimitPartition.GetFixedWindowLimiter(partitionKey: httpContext.Request.Headers.Host.ToString(), partition =>
+        return RateLimitPartition.GetFixedWindowLimiter("login", partition =>
             new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 5,
+                PermitLimit = 3,
                 AutoReplenishment = true,
-                QueueLimit = 5,
+                QueueLimit = 3,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                Window = TimeSpan.FromSeconds(10)
+                Window = TimeSpan.FromSeconds(15)
+                
             });
     });
+    
+    
     options.OnRejected = async (context, token) =>
     {
         context.HttpContext.Response.StatusCode = 429;
-        await context.HttpContext.Response.WriteAsync("Too many requests. Please try later again... ", cancellationToken: token);
+
     };
+    
+    
+    
+    
+    
+    
 });
 
 
@@ -118,5 +129,7 @@ static string GetTicks() => (DateTime.Now.Ticks & 0x11111).ToString("00000");
  //  .RequireRateLimiting(fixedPolicy);
 
 
+// Group
+app.MapGroup("/Identity/Account/Login").RequireRateLimiting("login");
 
 app.Run();
