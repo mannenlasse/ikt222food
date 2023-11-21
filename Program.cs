@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using AspNetCoreRateLimit;
+using EonaCat.Helpers.Extensions;
 using NuGet.Protocol.Plugins;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,35 +36,41 @@ builder.Configuration.GetSection(MyRateLimitOptions.MyRateLimit).Bind(myOptions)
 var fixedPolicy = "fixed";
 
 
-int maxRejectionsBeforeTimeout = 2;
+int maxRejectionsBeforeTimeout = 3;
 int rejection = 0;
 
 
 builder.Services.AddRateLimiter(options =>
 {
-    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(hei =>
-    {
-        return RateLimitPartition.GetFixedWindowLimiter("login", partition =>
-            new FixedWindowRateLimiterOptions
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.User.Identity?.Name ?? httpContext.Request.Headers.Host.ToString(),
+            factory: partition => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 3,
                 AutoReplenishment = true,
-                QueueLimit = 3,
-                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                PermitLimit = 4,
                 Window = TimeSpan.FromSeconds(15)
-                
-            });
-    });
-    
-    
+            }));
+
+
+
+
     options.OnRejected = async (context, token) =>
     {
         context.HttpContext.Response.StatusCode = 429;
-
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+        {
+            await context.HttpContext.Response.WriteAsync(
+                $"Too many requests. Please try again after {retryAfter.TotalSeconds} seconds. " +
+                $"Read more about our rate limits at https://example.org/docs/ratelimiting.", cancellationToken: token);
+        }
+        else
+        {
+            await context.HttpContext.Response.WriteAsync(
+                "Too many requests. Please try again later. " +
+                "Read more about our rate limits at https://example.org/docs/ratelimiting.", cancellationToken: token);
+        }
     };
-    
-    
-    
     
     
     
