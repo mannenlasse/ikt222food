@@ -36,6 +36,7 @@ public class MyRecipesController : Controller
     // GET: Blog/Create
     [HttpGet]
     [Authorize]
+   
     public IActionResult Add()
     {
         ViewData["UserId"] = new SelectList(_db.Users, "Id", "Id");
