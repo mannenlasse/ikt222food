@@ -45,18 +45,10 @@ int rejection = 0;
 
 builder.Services.AddRateLimiter(options =>
 {
-    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(hei =>
+    options.AddFixedWindowLimiter(policyName: "login", options1 =>
     {
-        return RateLimitPartition.GetFixedWindowLimiter("login", partition =>
-            new FixedWindowRateLimiterOptions
-            {
-                
-                PermitLimit = 4,
-                AutoReplenishment = true,
-                Window = TimeSpan.FromSeconds(15)
-                
-            });
-
+        options1.PermitLimit = 4;
+        options1.Window = TimeSpan.FromSeconds(12);
 
     });
     
@@ -83,10 +75,6 @@ builder.Services.AddRateLimiter(options =>
 
 
 var app = builder.Build();
-
-
-// Group
-app.MapGroup("/Identity/Account/Login").RequireRateLimiting("login");
 
 
 
@@ -144,7 +132,16 @@ app.MapRazorPages();
 
 
 
+// Group
 
+
+
+
+
+
+//static string GetTicks() => (DateTime.Now.Ticks & 0x11111).ToString("00000");
+
+//app.MapGet("/", () => Results.Ok($"Hello {GetTicks()}")).RequireRateLimiting("login");
 
 
 app.Run();
