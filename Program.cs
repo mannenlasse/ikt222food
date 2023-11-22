@@ -8,6 +8,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using AspNetCoreRateLimit;
+using EonaCat.Web.RateLimiter.Endpoints.Extensions;
 using NuGet.Protocol.Plugins;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -49,23 +50,31 @@ builder.Services.AddRateLimiter(options =>
         return RateLimitPartition.GetFixedWindowLimiter("login", partition =>
             new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 3,
+                
+                PermitLimit = 4,
                 AutoReplenishment = true,
-                QueueLimit = 3,
-                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 Window = TimeSpan.FromSeconds(15)
                 
             });
+
+
     });
     
     
     options.OnRejected = async (context, token) =>
     {
         context.HttpContext.Response.StatusCode = 429;
-
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+        {
+            await context.HttpContext.Response.WriteAsync(
+                $"Too many requests. Please try again after {retryAfter.TotalSeconds} seconds. " , cancellationToken: token);
+        }
+        else
+        {
+            await context.HttpContext.Response.WriteAsync(
+                "Too many requests. Please try again later. " , cancellationToken: token);
+        }
     };
-    
-    
     
     
     
@@ -74,6 +83,12 @@ builder.Services.AddRateLimiter(options =>
 
 
 var app = builder.Build();
+
+
+// Group
+app.MapGroup("/Identity/Account/Login").RequireRateLimiting("login");
+
+
 
 //call the database initializer
 using (var services = app.Services.CreateScope())
@@ -121,19 +136,15 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=index}/{id?}");
 app.MapRazorPages();
 
 
-static string GetTicks() => (DateTime.Now.Ticks & 0x11111).ToString("00000");
-
-//app.MapGet("/Identity/Account/Login",  () => Console.WriteLine($"Fixed Window Limiter {GetTicks()}"))
- //  .RequireRateLimiting(fixedPolicy);
 
 
-// Group
-app.MapGroup("/Identity/Account/Login").RequireRateLimiting("login");
+
 
 app.Run();
